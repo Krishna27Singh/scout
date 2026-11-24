@@ -3,189 +3,173 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0d1117">
+    <meta name="theme-color" content="#010409">
     <meta name="description" content="Find open-source issues that fit your interests and experience.">
-    <title>Scout — Find your next open-source contribution</title>
+    <title>Scout · Issues</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script type="module" src="/static/app.js"></script>
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Scout home">
-        <span class="brand-mark" aria-hidden="true">S</span>
-        <span>Scout</span>
+      <a class="brand" href="/" aria-label="Scout issues">
+        <svg class="brand-mark" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M1.5 2.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v1.5h2.25a.75.75 0 0 1 .75.75v2.25h1.75a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-.75.75h-9.5a.75.75 0 0 1-.75-.75v-9.5Zm1.5 8.75v1h8v-3h-2.5a.75.75 0 0 1-.75-.75V5.75H6.5a.75.75 0 0 1-.75-.75V3.5H3v8Zm2.75-5.75h1.5v1.5h-1.5v-1.5Zm-2.5 3h1.5v1.5h-1.5v-1.5Zm2.5 0h1.5v1.5h-1.5v-1.5Z" fill="currentColor"/>
+        </svg>
+        <span class="breadcrumb-root">scout</span>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">issues</span>
       </a>
-      <div class="topbar-caption">Open-source issue matchmaker</div>
-      <button
-        id="sidebar-toggle"
-        class="icon-button mobile-menu"
-        type="button"
-        aria-label="Toggle preferences sidebar"
-        aria-expanded="false"
-        aria-controls="sidebar"
-      >
-        <span aria-hidden="true">☰</span>
-      </button>
-      <div class="health-indicator" aria-live="polite">
-        <span id="health-dot" class="health-dot is-waking" aria-hidden="true"></span>
-        <span id="health-label">Connecting</span>
+      <div class="topbar-actions">
+        <div class="health-indicator" aria-live="polite">
+          <span id="health-dot" class="health-dot is-waking" aria-hidden="true"></span>
+          <span id="health-label">Connecting</span>
+        </div>
+        <button id="new-session" class="button button-secondary new-session" type="button">
+          New session
+        </button>
+        <button
+          id="sidebar-toggle"
+          class="icon-button mobile-menu"
+          type="button"
+          aria-label="Toggle filters"
+          aria-expanded="false"
+          aria-controls="sidebar"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2 3.75A.75.75 0 0 1 2.75 3h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4A.75.75 0 0 1 2.75 7h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 7.75Zm.75 3.25a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z" fill="currentColor"/>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <div id="wake-banner" class="wake-banner" role="status">
+    <div id="wake-banner" class="wake-banner" role="status" hidden>
       <span class="wake-spinner" aria-hidden="true"></span>
       <span>Waking up backend (~30s on free tier)…</span>
     </div>
 
     <main class="app-layout">
-      <aside id="sidebar" class="sidebar" aria-label="Session and preferences">
-        <section class="panel session-panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">YOUR SESSION</p>
-              <h1>Preferences</h1>
-            </div>
-            <button id="new-session" class="button button-quiet button-small" type="button">
-              New session
-            </button>
+      <aside id="sidebar" class="sidebar" aria-label="Session and issue filters">
+        <section class="sidebar-section session-section">
+          <div class="section-title-row">
+            <h1>Session</h1>
+            <span id="save-status" class="save-status" aria-live="polite">Synced</span>
           </div>
-          <div class="session-key-wrap">
-            <span class="muted-label">Session key</span>
-            <code id="session-key" class="session-key"></code>
-          </div>
-          <p id="save-status" class="save-status" aria-live="polite">Preferences are private to this session.</p>
+          <code id="session-key" class="session-key"></code>
         </section>
 
-        <section class="panel preferences-panel">
-          <div class="section-heading compact-heading">
-            <div>
-              <p class="eyebrow">TUNE YOUR MATCHES</p>
-              <h2>Saved preferences</h2>
-            </div>
+        <section class="sidebar-section">
+          <h2>Languages</h2>
+          <div class="tag-entry">
+            <label class="sr-only" for="languages-input">Add a preferred language</label>
+            <input id="languages-input" data-tag-input="preferred_languages" placeholder="Filter by language" autocomplete="off">
+            <button class="button button-secondary button-small" data-add-tag="preferred_languages" type="button">Add</button>
           </div>
+          <div id="languages-tags" class="tag-list"></div>
+        </section>
 
-          <div class="preference-group">
-            <h3>Preferred languages</h3>
-            <div id="languages-tags" class="tag-list"></div>
-            <div class="tag-entry">
-              <label class="sr-only" for="languages-input">Add a preferred language</label>
-              <input id="languages-input" data-tag-input="preferred_languages" placeholder="e.g. Python" autocomplete="off">
-              <button class="button button-quiet button-small" data-add-tag="preferred_languages" type="button">Add</button>
-            </div>
+        <section class="sidebar-section">
+          <h2>Topics</h2>
+          <div class="tag-entry">
+            <label class="sr-only" for="topics-input">Add a preferred topic</label>
+            <input id="topics-input" data-tag-input="preferred_topics" placeholder="Filter by topic" autocomplete="off">
+            <button class="button button-secondary button-small" data-add-tag="preferred_topics" type="button">Add</button>
           </div>
+          <div id="topics-tags" class="tag-list"></div>
+        </section>
 
-          <div class="preference-group">
-            <h3>Preferred topics</h3>
-            <div id="topics-tags" class="tag-list"></div>
-            <div class="tag-entry">
-              <label class="sr-only" for="topics-input">Add a preferred topic</label>
-              <input id="topics-input" data-tag-input="preferred_topics" placeholder="e.g. accessibility" autocomplete="off">
-              <button class="button button-quiet button-small" data-add-tag="preferred_topics" type="button">Add</button>
-            </div>
+        <section class="sidebar-section">
+          <h2>Organizations</h2>
+          <div class="tag-entry">
+            <label class="sr-only" for="orgs-input">Add a preferred organization</label>
+            <input id="orgs-input" data-tag-input="preferred_orgs" placeholder="Filter by organization" autocomplete="off">
+            <button class="button button-secondary button-small" data-add-tag="preferred_orgs" type="button">Add</button>
           </div>
+          <div id="orgs-tags" class="tag-list"></div>
+        </section>
 
-          <div class="preference-group">
-            <h3>Preferred organizations</h3>
-            <div id="orgs-tags" class="tag-list"></div>
-            <div class="tag-entry">
-              <label class="sr-only" for="orgs-input">Add a preferred organization</label>
-              <input id="orgs-input" data-tag-input="preferred_orgs" placeholder="e.g. sugarlabs" autocomplete="off">
-              <button class="button button-quiet button-small" data-add-tag="preferred_orgs" type="button">Add</button>
-            </div>
+        <section class="sidebar-section blocked-section">
+          <h2>Excluded labels</h2>
+          <div class="tag-entry">
+            <label class="sr-only" for="excluded-labels-input">Add an excluded label</label>
+            <input id="excluded-labels-input" data-tag-input="excluded_labels" placeholder="Block a label" autocomplete="off">
+            <button class="button button-secondary button-small" data-add-tag="excluded_labels" type="button">Block</button>
           </div>
+          <div id="excluded-labels-tags" class="tag-list"></div>
+        </section>
 
-          <div class="preference-group negative-group">
-            <h3>Excluded labels <span class="negative-caption">blocked</span></h3>
-            <div id="excluded-labels-tags" class="tag-list"></div>
-            <div class="tag-entry">
-              <label class="sr-only" for="excluded-labels-input">Add an excluded label</label>
-              <input id="excluded-labels-input" data-tag-input="excluded_labels" placeholder="e.g. documentation" autocomplete="off">
-              <button class="button button-quiet button-small" data-add-tag="excluded_labels" type="button">Block</button>
-            </div>
+        <section class="sidebar-section blocked-section">
+          <h2>Excluded topics</h2>
+          <div class="tag-entry">
+            <label class="sr-only" for="excluded-topics-input">Add an excluded topic</label>
+            <input id="excluded-topics-input" data-tag-input="excluded_topics" placeholder="Block a topic" autocomplete="off">
+            <button class="button button-secondary button-small" data-add-tag="excluded_topics" type="button">Block</button>
           </div>
+          <div id="excluded-topics-tags" class="tag-list"></div>
+        </section>
 
-          <div class="preference-group negative-group">
-            <h3>Excluded topics <span class="negative-caption">blocked</span></h3>
-            <div id="excluded-topics-tags" class="tag-list"></div>
-            <div class="tag-entry">
-              <label class="sr-only" for="excluded-topics-input">Add an excluded topic</label>
-              <input id="excluded-topics-input" data-tag-input="excluded_topics" placeholder="e.g. frontend" autocomplete="off">
-              <button class="button button-quiet button-small" data-add-tag="excluded_topics" type="button">Block</button>
-            </div>
-          </div>
+        <section class="sidebar-section">
+          <label class="field-label" for="experience-level">Experience level</label>
+          <select id="experience-level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </section>
 
-          <div class="preference-group">
-            <label class="field-label" for="experience-level">Experience level</label>
-            <select id="experience-level">
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
-
+        <section class="sidebar-section compact-section">
           <label class="toggle-row" for="prioritize-gsoc">
-            <span>
-              <strong>Prioritize GSoC</strong>
-              <small>Boost Google Summer of Code projects</small>
-            </span>
+            <span>Prioritize GSoC organizations</span>
             <input id="prioritize-gsoc" type="checkbox" checked>
-            <span class="toggle-switch" aria-hidden="true"></span>
           </label>
         </section>
 
-        <section class="panel starter-panel">
-          <p class="eyebrow">GET STARTED</p>
-          <h2>Try a prompt</h2>
+        <section class="sidebar-section examples-section">
+          <h2>Example searches</h2>
           <div class="starter-prompts">
-            <button class="prompt-chip" type="button" data-prompt="Python GSoC issues, avoid documentation">
-              Python GSoC · no docs
+            <button class="prompt-link" type="button" data-prompt="Python GSoC issues, avoid documentation">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span>Python GSoC issues, avoid documentation</span>
             </button>
-            <button class="prompt-chip" type="button" data-prompt="C++ performance bugs in arxlang/doukimd">
-              C++ performance in arxlang
+            <button class="prompt-link" type="button" data-prompt="C++ performance bugs in arxlang/doukimd">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span>C++ performance bugs in arxlang/doukimd</span>
             </button>
-            <button class="prompt-chip" type="button" data-prompt="Beginner-friendly TypeScript issues in sugarlabs">
-              Beginner TypeScript · sugarlabs
+            <button class="prompt-link" type="button" data-prompt="Beginner-friendly TypeScript issues in sugarlabs">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span>Beginner-friendly TypeScript in sugarlabs</span>
             </button>
           </div>
         </section>
       </aside>
 
-      <section class="chat-panel" aria-label="Scout conversation">
-        <div class="chat-heading">
-          <div>
-            <p class="eyebrow">SCOUT ASSISTANT</p>
-            <h2>Find your next contribution</h2>
-          </div>
-          <span class="privacy-note"><span class="privacy-icon" aria-hidden="true">◈</span> Grounded in real issues</span>
-        </div>
-
+      <section class="workspace" aria-label="Scout issue search">
         <div id="error-banner" class="error-banner" role="alert" hidden></div>
         <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text">
           <div id="welcome-card" class="welcome-card">
-            <span class="welcome-orbit" aria-hidden="true">✦</span>
-            <h3>What would you like to work on?</h3>
-            <p>Tell Scout about your interests, preferred languages, or the kind of issue you want to tackle.</p>
+            <svg class="welcome-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M1.5 2.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v1.5h2.25a.75.75 0 0 1 .75.75v2.25h1.75a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-.75.75h-9.5a.75.75 0 0 1-.75-.75v-9.5Zm1.5 8.75v1h8v-3h-2.5a.75.75 0 0 1-.75-.75V5.75H6.5a.75.75 0 0 1-.75-.75V3.5H3v8Zm2.75-5.75h1.5v1.5h-1.5v-1.5Zm-2.5 3h1.5v1.5h-1.5v-1.5Zm2.5 0h1.5v1.5h-1.5v-1.5Z" fill="currentColor"/>
+            </svg>
+            <h2>Find an issue to work on</h2>
+            <p>Search open-source issues by language, project, or the kind of work you want to do.</p>
           </div>
         </div>
 
         <form id="chat-form" class="composer">
-          <label class="sr-only" for="message-input">Message Scout</label>
+          <label class="sr-only" for="message-input">Search open-source issues</label>
           <textarea
             id="message-input"
             rows="1"
             maxlength="1000"
-            placeholder="Describe the issues you’re looking for…"
+            placeholder="Describe the issue you’re looking for…"
             required
           ></textarea>
           <div class="composer-footer">
-            <span class="composer-hint">Enter to send · Shift + Enter for a new line</span>
+            <span class="composer-hint">Enter to search · Shift+Enter for newline</span>
             <button id="send-button" class="button button-primary" type="submit">
-              <span>Find issues</span>
-              <span aria-hidden="true">↗</span>
+              <span>Search issues</span>
             </button>
           </div>
         </form>
-        <p class="footer-note">Issue metadata is fetched from GitHub. Scout never invents issue links.</p>
       </section>
     </main>
   </body>
