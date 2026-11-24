@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a capability or request a new GSoC organization/repository.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: "Describe the user need and keep proposals focused."
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - Product feature
+        - Add a GSoC organization
+        - Add a repository
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Organization or repository
+      description: For catalog requests, provide an organization or `owner/repository`.
+      placeholder: "owner/repository"
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user need does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like and any alternatives considered.
+    validations:
+      required: true
