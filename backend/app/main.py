@@ -10,8 +10,10 @@ from starlette.responses import Response
 
 from app.api.routes.health import router as health_router
 from app.api.routes.profiles import router as profiles_router
+from app.api.routes.search import router as search_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, request_id_context
+from app.ingestion.embedder import FastEmbedder
 
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 
@@ -25,6 +27,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
     application = FastAPI(title="Scout", version="0.1.0", lifespan=lifespan)
+    application.state.embedder = FastEmbedder()
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -50,6 +53,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health_router)
     application.include_router(profiles_router)
+    application.include_router(search_router)
     return application
 
 

@@ -28,3 +28,10 @@ embedding model is downloaded lazily into `.cache/fastembed` the first time
 there are actionable issues to embed. Use
 `python -m app.ingestion.cli sync --program gsoc --max-repos 80` to prioritize
 and limit a program-specific catalog run.
+
+## Hybrid search
+
+The Phase 3 search API is available at `POST /api/v1/search`; it combines
+vector and PostgreSQL full-text retrieval with hard filters and ranking
+signals. Run `make eval-retrieval` to evaluate the benchmark against the local
+database. The evaluator rolls back its seeded benchmark data after each run.
