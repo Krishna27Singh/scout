@@ -18,6 +18,8 @@ dependencies = [
     "pgvector>=0.3.6",
     "alembic>=1.13",
     "httpx>=0.27",
+    "fastembed>=0.4.2",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +28,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.6",
     "mypy>=1.11",
+    "types-PyYAML",
 ]
 
 [tool.setuptools]
@@ -56,6 +59,7 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["backend/tests"]
 markers = ["integration: requires PostgreSQL 17 with pgvector"]
 addopts = "-ra"

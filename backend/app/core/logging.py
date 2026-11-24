@@ -21,6 +21,17 @@ class JsonFormatter(logging.Formatter):
             payload["request_id"] = request_id
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
+        standard_fields = set(logging.makeLogRecord({}).__dict__) | {
+            "message",
+            "asctime",
+        }
+        payload.update(
+            {
+                key: value
+                for key, value in record.__dict__.items()
+                if key not in standard_fields and not key.startswith("_")
+            }
+        )
         return json.dumps(payload, default=str)
 
 

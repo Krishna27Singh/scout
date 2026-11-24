@@ -17,3 +17,14 @@ make run
 
 Run checks with `make lint`, `make typecheck`, and `make test`. Database
 integration tests require the local PostgreSQL 17 + pgvector service.
+
+## Issue ingestion
+
+Set `GITHUB_TOKEN` in `.env`, then run `make sync-all` to fetch the curated
+repositories in `backend/app/ingestion/repos.yaml`. Use
+`make sync-repo REPO=owner/name` to sync one repository, or `make prune` to
+remove expired closed issues and inactive on-demand repositories. The ONNX
+embedding model is downloaded lazily into `.cache/fastembed` the first time
+there are actionable issues to embed. Use
+`python -m app.ingestion.cli sync --program gsoc --max-repos 80` to prioritize
+and limit a program-specific catalog run.
