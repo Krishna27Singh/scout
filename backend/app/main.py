@@ -1,11 +1,13 @@
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg import AsyncConnection
@@ -13,6 +15,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
 from app.agent.llm import FallbackLLMRouter
 from app.api.routes.chat import router as chat_router
@@ -24,6 +27,7 @@ from app.core.logging import configure_logging, request_id_context
 from app.ingestion.embedder import FastEmbedder
 
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+_FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 
 @asynccontextmanager
@@ -65,6 +69,11 @@ def create_app() -> FastAPI:
     application.state.embedder = FastEmbedder()
     application.state.llm_router = FallbackLLMRouter(settings)
     application.state.checkpointer = MemorySaver()
+    application.mount(
+        "/static",
+        StaticFiles(directory=str(_FRONTEND_DIR)),
+        name="static",
+    )
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -92,6 +101,14 @@ def create_app() -> FastAPI:
     application.include_router(profiles_router)
     application.include_router(search_router)
     application.include_router(chat_router)
+
+    @application.get("/", include_in_schema=False)
+    async def frontend_index() -> FileResponse:
+        return FileResponse(
+            _FRONTEND_DIR / "index.html",
+            headers={"Cache-Control": "no-cache"},
+        )
+
     return application
 
 
