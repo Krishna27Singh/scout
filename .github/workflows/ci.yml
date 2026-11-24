@@ -52,3 +52,14 @@ jobs:
         run: python -m backend.evals.run_retrieval_evals --embedder fastembed
       - name: Evaluate conversational agent
         run: python -m backend.evals.run_agent_evals --mode deterministic
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build -t scout:ci .
+      - name: Verify app imports and PyTorch is absent
+        run: >-
+          docker run --rm --entrypoint python scout:ci -c
+          "import importlib.util; from app.main import create_app; app = create_app(); assert app is not None; assert importlib.util.find_spec('torch') is None"

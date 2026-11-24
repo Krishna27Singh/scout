@@ -1,4 +1,4 @@
-.PHONY: db-up db-down migrate lint typecheck test run sync-repo sync-all prune eval-retrieval eval-agent
+.PHONY: db-up db-down migrate lint typecheck test run sync-repo sync-all prune eval-retrieval eval-agent docker-build up
 
 db-up:
 	docker compose up -d db
@@ -36,3 +36,9 @@ eval-retrieval:
 
 eval-agent:
 	python -m backend.evals.run_agent_evals --mode deterministic
+
+docker-build:
+	docker build -t scout:local .
+
+up:
+	docker compose up --build
