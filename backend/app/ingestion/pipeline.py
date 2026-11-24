@@ -49,6 +49,21 @@ def _matches_program(tags: list[str], program: str | None) -> bool:
     return program is None or program.casefold() in tags
 
 
+def find_seed_repo_target(repos_file: Path, owner: str, name: str) -> RepoTarget | None:
+    normalized_owner = owner.casefold()
+    normalized_name = name.casefold()
+    catalog = load_seed_catalog(repos_file)
+    return next(
+        (
+            target
+            for target in catalog.repositories
+            if target.owner.casefold() == normalized_owner
+            and target.name.casefold() == normalized_name
+        ),
+        None,
+    )
+
+
 async def resolve_seed_targets(
     catalog: SeedCatalog,
     github_client: IssueFetcher,
@@ -152,12 +167,13 @@ class IngestionPipeline:
         max_issues: int | None = None,
         priority: int = 100,
         program_tags: list[str] | None = None,
+        full: bool = False,
     ) -> RepoSyncStats:
         full_name = f"{owner}/{name}"
         existing_repo = await session.scalar(
             select(Repository).where(Repository.full_name == full_name)
         )
-        since = existing_repo.last_synced_at if existing_repo is not None else None
+        since = existing_repo.last_synced_at if existing_repo is not None and not full else None
         if self.github_client is None:
             raise RuntimeError("GitHub client is required to sync repositories")
         cursor_time = datetime.now(UTC)
@@ -304,6 +320,7 @@ class IngestionPipeline:
         max_issues_per_repo: int | None = None,
         program: str | None = None,
         max_repos: int | None = None,
+        full: bool = False,
     ) -> SyncRunSummary:
         catalog = load_seed_catalog(repos_file)
         if self.github_client is None:
@@ -340,6 +357,7 @@ class IngestionPipeline:
                         max_issues=max_issues_per_repo,
                         priority=target.priority,
                         program_tags=target.program_tags,
+                        full=full,
                     )
                 )
             except Exception as exc:

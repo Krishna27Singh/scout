@@ -59,11 +59,12 @@ async def test_openai_compatible_client_sends_json_schema_request() -> None:
     assert result.intent == "search"
     request_payload = json.loads(requests[0].content)
     assert request_payload["response_format"] == {"type": "json_object"}
+    assert request_payload["max_tokens"] >= 2048
     assert "JSON Schema" in request_payload["messages"][0]["content"]
     await client.aclose()
 
 
-@pytest.mark.parametrize("status_code", [429, 503])
+@pytest.mark.parametrize("status_code", [400, 404, 429, 503])
 async def test_router_fails_over_from_groq_to_gemini(status_code: int) -> None:
     def groq_handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code, json={"error": "temporarily unavailable"})
@@ -100,6 +101,10 @@ async def test_router_fails_over_from_groq_to_gemini(status_code: int) -> None:
     assert result.intent == "search"
     await groq_http.aclose()
     await gemini_client.aclose()
+
+
+def test_groq_model_default_uses_current_gpt_oss_model() -> None:
+    assert Settings(_env_file=None).groq_model == "openai/gpt-oss-20b"
 
 
 async def test_invalid_json_gets_one_corrective_retry() -> None:

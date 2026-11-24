@@ -141,6 +141,30 @@ async def test_since_cursor_stops_at_first_old_issue() -> None:
     assert requested == 1
 
 
+@pytest.mark.parametrize(
+    ("since", "expected_states"),
+    [
+        (None, ["OPEN"]),
+        (datetime(2026, 11, 21, tzinfo=UTC), ["OPEN", "CLOSED"]),
+    ],
+)
+async def test_issue_fetch_selects_states_based_on_sync_type(
+    since: datetime | None,
+    expected_states: list[str],
+) -> None:
+    request_states: list[list[str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        request_states.append(json.loads(request.content)["variables"]["states"])
+        return httpx.Response(200, json=_payload(_repository([])))
+
+    client, http_client = _client(handler)
+    await client.fetch_repository_issues("acme", "project", since=since)
+    await http_client.aclose()
+
+    assert request_states == [expected_states]
+
+
 @pytest.mark.parametrize("statuses", [[429, 200], [503, 503, 200]])
 async def test_transient_http_errors_retry_with_bounded_attempts(
     statuses: list[int],

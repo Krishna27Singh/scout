@@ -9,7 +9,7 @@ from pathlib import Path
 from app.core.config import get_settings
 from app.db.session import SessionFactory, engine
 from app.ingestion.github_client import GitHubGraphQLClient
-from app.ingestion.pipeline import IngestionPipeline
+from app.ingestion.pipeline import IngestionPipeline, find_seed_repo_target
 from app.ingestion.seed import RepoTarget
 
 DEFAULT_REPOS_FILE = Path(__file__).with_name("repos.yaml")
@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
     sync_parser.add_argument("--repos-file", type=Path, default=DEFAULT_REPOS_FILE)
     sync_parser.add_argument("--repo", help="Only sync one repository in owner/name form")
     sync_parser.add_argument("--max-issues", type=_positive_integer)
+    sync_parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Ignore the last-sync cursor and backfill open issues",
+    )
     sync_parser.add_argument(
         "--program",
         help="Only sync seed targets tagged with this program (for example: gsoc)",
@@ -74,11 +79,19 @@ async def _run(args: argparse.Namespace) -> tuple[dict[str, object], bool]:
             if args.repo:
                 try:
                     target = _parse_target(args.repo)
+                    seed_target = find_seed_repo_target(
+                        args.repos_file,
+                        target.owner,
+                        target.name,
+                    )
                     stats = await pipeline.sync_repository(
                         session,
                         target.owner,
                         target.name,
                         max_issues=args.max_issues,
+                        priority=seed_target.priority if seed_target is not None else 100,
+                        program_tags=seed_target.program_tags if seed_target is not None else None,
+                        full=args.full,
                     )
                 except Exception as exc:
                     await session.rollback()
@@ -91,6 +104,7 @@ async def _run(args: argparse.Namespace) -> tuple[dict[str, object], bool]:
                 max_issues_per_repo=args.max_issues,
                 program=args.program,
                 max_repos=args.max_repos,
+                full=args.full,
             )
             return asdict(summary), summary.synced == 0 and summary.failed > 0
 

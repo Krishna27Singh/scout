@@ -53,6 +53,7 @@ class AgentPlan(BaseModel):
     target_org: str | None = Field(default=None, max_length=128)
     target_repo: str | None = Field(default=None, max_length=256)
     program_tags: list[str] = Field(default_factory=list)
+    override_languages: list[str] = Field(default_factory=list)
     dismiss_issue_id: int | None = Field(default=None, gt=0)
     dismiss_reason: str | None = None
     clarifying_question: str | None = None
@@ -60,6 +61,15 @@ class AgentPlan(BaseModel):
     @field_validator("program_tags", mode="before")
     @classmethod
     def normalize_program_tags(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        if any(not isinstance(item, str) for item in value):
+            return value
+        return sorted({item.strip().casefold() for item in value if item.strip()})
+
+    @field_validator("override_languages", mode="before")
+    @classmethod
+    def normalize_override_languages(cls, value: object) -> object:
         if not isinstance(value, list):
             return value
         if any(not isinstance(item, str) for item in value):

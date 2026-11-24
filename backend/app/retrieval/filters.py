@@ -14,6 +14,8 @@ def _union_values(saved: Sequence[str], requested: Sequence[str]) -> list[str]:
 def merge_filters(
     profile: UserProfile | None,
     override: SearchFilters | None,
+    *,
+    replace_saved_languages: bool = False,
 ) -> SearchFilters:
     saved_languages = profile.preferred_languages if profile is not None else []
     saved_owners = profile.preferred_orgs if profile is not None else []
@@ -22,7 +24,10 @@ def merge_filters(
     saved_experience = profile.experience_level if profile is not None else "intermediate"
     requested = override or SearchFilters()
     values = {
-        "languages": _union_values(saved_languages, requested.languages),
+        "languages": _union_values(
+            [] if replace_saved_languages else saved_languages,
+            requested.languages,
+        ),
         "repo_owners": _union_values(saved_owners, requested.repo_owners),
         "repo_full_names": _union_values([], requested.repo_full_names),
         "program_tags": _union_values([], requested.program_tags),

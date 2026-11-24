@@ -17,7 +17,8 @@ TRANSIENT_STATUS_CODES = {429, 502, 503, 504}
 
 _REPOSITORY_QUERY = """
 query RepositoryIssues(
-  $owner: String!, $name: String!, $cursor: String, $issueLimit: Int!
+  $owner: String!, $name: String!, $cursor: String, $issueLimit: Int!,
+  $states: [IssueState!]!
 ) {
   rateLimit { remaining resetAt cost }
   repository(owner: $owner, name: $name) {
@@ -44,7 +45,7 @@ query RepositoryIssues(
     issues(
       first: $issueLimit, after: $cursor,
       orderBy: {field: UPDATED_AT, direction: DESC},
-      states: [OPEN, CLOSED]
+      states: $states
     ) {
       nodes {
         databaseId
@@ -268,6 +269,7 @@ class GitHubGraphQLClient:
                     "name": name,
                     "cursor": cursor,
                     "issueLimit": page_size,
+                    "states": ["OPEN"] if since is None else ["OPEN", "CLOSED"],
                 },
             )
             repository_data = data.get("repository")
