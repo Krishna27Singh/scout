@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,9 +23,15 @@ class Settings(BaseSettings):
     ingestion_max_issues_per_repo: int = 120
     closed_issue_retention_days: int = 14
     on_demand_repo_retention_days: int = 30
-    llm_provider: str = "groq"
+    llm_provider: Literal["groq", "gemini"] = "groq"
     groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    llm_timeout_seconds: float = 20.0
+    jit_hydration_max_issues: int = 60
+    jit_hydration_max_org_repos: int = 3
+    jit_hydration_stale_hours: int = 24
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -45,6 +52,18 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_log_level(cls, value: str) -> str:
         return value.upper()
+
+    @field_validator(
+        "llm_timeout_seconds",
+        "jit_hydration_max_issues",
+        "jit_hydration_max_org_repos",
+        "jit_hydration_stale_hours",
+    )
+    @classmethod
+    def require_positive_agent_limits(cls, value: float | int) -> float | int:
+        if value <= 0:
+            raise ValueError("agent timeout and hydration limits must be positive")
+        return value
 
 
 @lru_cache

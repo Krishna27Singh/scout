@@ -1,4 +1,4 @@
-.PHONY: db-up db-down migrate lint typecheck test run sync-repo sync-all prune eval-retrieval
+.PHONY: db-up db-down migrate lint typecheck test run sync-repo sync-all prune eval-retrieval eval-agent
 
 db-up:
 	docker compose up -d db
@@ -33,3 +33,6 @@ prune:
 
 eval-retrieval:
 	python -m backend.evals.run_retrieval_evals --embedder fastembed
+
+eval-agent:
+	python -m backend.evals.run_agent_evals --mode deterministic

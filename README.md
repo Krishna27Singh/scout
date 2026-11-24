@@ -35,3 +35,12 @@ The Phase 3 search API is available at `POST /api/v1/search`; it combines
 vector and PostgreSQL full-text retrieval with hard filters and ranking
 signals. Run `make eval-retrieval` to evaluate the benchmark against the local
 database. The evaluator rolls back its seeded benchmark data after each run.
+
+## Conversational agent
+
+Phase 4 adds `POST /api/v1/chat` and
+`GET /api/v1/chat/{session_key}/history`, with persistent preference memory,
+structured Groq/Gemini routing, and deterministic offline fallback. Production
+uses the PostgreSQL LangGraph checkpointer; development and tests use the
+in-memory checkpointer. `make eval-agent` runs the deterministic agent and
+hydration evaluation suite against the local database.

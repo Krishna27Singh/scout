@@ -50,3 +50,5 @@ jobs:
         run: pytest -v
       - name: Evaluate retrieval quality
         run: python -m backend.evals.run_retrieval_evals --embedder fastembed
+      - name: Evaluate conversational agent
+        run: python -m backend.evals.run_agent_evals --mode deterministic
