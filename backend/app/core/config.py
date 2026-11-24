@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://scout:scout@localhost:5432/scout"
     embedding_dim: int = 384
     github_token: str = ""
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_cache_dir: str = ".cache/fastembed"
+    ingestion_max_issues_per_repo: int = 120
+    closed_issue_retention_days: int = 14
+    on_demand_repo_retention_days: int = 30
     llm_provider: str = "groq"
     groq_api_key: str = ""
     gemini_api_key: str = ""

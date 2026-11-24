@@ -1,4 +1,4 @@
-.PHONY: db-up db-down migrate lint typecheck test run
+.PHONY: db-up db-down migrate lint typecheck test run sync-repo sync-all prune
 
 db-up:
 	docker compose up -d db
@@ -21,3 +21,12 @@ test:
 
 run:
 	uvicorn app.main:app --app-dir backend --reload
+
+sync-repo:
+	python -m app.ingestion.cli sync --repo "$(REPO)"
+
+sync-all:
+	python -m app.ingestion.cli sync
+
+prune:
+	python -m app.ingestion.cli prune

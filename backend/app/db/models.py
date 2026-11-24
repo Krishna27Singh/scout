@@ -29,6 +29,13 @@ from app.db.base import Base
 
 class Repository(Base):
     __tablename__ = "repositories"
+    __table_args__ = (
+        Index(
+            "ix_repositories_program_tags",
+            "program_tags",
+            postgresql_using="gin",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     github_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
@@ -46,6 +53,12 @@ class Repository(Base):
     )
     source: Mapped[str] = mapped_column(
         String(32), default="curated", server_default=text("'curated'")
+    )
+    program_tags: Mapped[list[str]] = mapped_column(
+        ARRAY(String), default=list, server_default=text("'{}'::varchar[]")
+    )
+    priority: Mapped[int] = mapped_column(
+        Integer, default=100, server_default=text("100"), index=True
     )
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_queried_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

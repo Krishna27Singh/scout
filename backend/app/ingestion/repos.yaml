@@ -1,0 +1,365 @@
+repositories:
+  # Priority 1: explicit GSoC mentoring repositories.
+  # EdTech, Sugar Labs, and community
+  - owner: sugarlabs
+    name: musicblocks
+    priority: 1
+    program_tags: [gsoc]
+  - owner: sugarlabs
+    name: sugar
+    priority: 1
+    program_tags: [gsoc]
+  - owner: oppia
+    name: oppia
+    priority: 1
+    program_tags: [gsoc]
+  - owner: CircuitVerse
+    name: CircuitVerse
+    priority: 1
+    program_tags: [gsoc]
+  - owner: Submitty
+    name: Submitty
+    priority: 1
+    program_tags: [gsoc]
+  - owner: fossasia
+    name: open-event-server
+    priority: 1
+    program_tags: [gsoc]
+  - owner: PalisadoesFoundation
+    name: talawa-api
+    priority: 1
+    program_tags: [gsoc]
+  - owner: zulip
+    name: zulip
+    priority: 1
+    program_tags: [gsoc]
+  - owner: RocketChat
+    name: Rocket.Chat
+    priority: 1
+    program_tags: [gsoc]
+  - owner: laurent22
+    name: joplin
+    priority: 1
+    program_tags: [gsoc]
+
+  # Python, web, and data science
+  - owner: django
+    name: django
+    priority: 1
+    program_tags: [gsoc]
+  - owner: wagtail
+    name: wagtail
+    priority: 1
+    program_tags: [gsoc]
+  - owner: sympy
+    name: sympy
+    priority: 1
+    program_tags: [gsoc]
+  - owner: numpy
+    name: numpy
+    priority: 1
+    program_tags: [gsoc]
+  - owner: scipy
+    name: scipy
+    priority: 1
+    program_tags: [gsoc]
+  - owner: scikit-learn
+    name: scikit-learn
+    priority: 1
+    program_tags: [gsoc]
+  - owner: pandas-dev
+    name: pandas
+    priority: 1
+    program_tags: [gsoc]
+  - owner: matplotlib
+    name: matplotlib
+    priority: 1
+    program_tags: [gsoc]
+  - owner: MDAnalysis
+    name: mdanalysis
+    priority: 1
+    program_tags: [gsoc]
+  - owner: deepchem
+    name: deepchem
+    priority: 1
+    program_tags: [gsoc]
+  - owner: numba
+    name: numba
+    priority: 1
+    program_tags: [gsoc]
+  - owner: bokeh
+    name: bokeh
+    priority: 1
+    program_tags: [gsoc]
+  - owner: scrapy
+    name: scrapy
+    priority: 1
+    program_tags: [gsoc]
+  - owner: arxlang
+    name: doukimd
+    priority: 1
+    program_tags: [gsoc]
+
+  # AI, machine learning, and vision
+  - owner: opencv
+    name: opencv
+    priority: 1
+    program_tags: [gsoc]
+  - owner: openvinotoolkit
+    name: openvino
+    priority: 1
+    program_tags: [gsoc]
+  - owner: keras-team
+    name: keras
+    priority: 1
+    program_tags: [gsoc]
+  - owner: pytorch
+    name: pytorch
+    priority: 1
+    program_tags: [gsoc]
+  - owner: mlpack
+    name: mlpack
+    priority: 1
+    program_tags: [gsoc]
+  - owner: kornia
+    name: kornia
+    priority: 1
+    program_tags: [gsoc]
+
+  # Systems, compilers, C/C++, and security
+  - owner: llvm
+    name: llvm-project
+    priority: 1
+    program_tags: [gsoc]
+  - owner: rizinorg
+    name: rizin
+    priority: 1
+    program_tags: [gsoc]
+  - owner: CCExtractor
+    name: ccextractor
+    priority: 1
+    program_tags: [gsoc]
+  - owner: FreeCAD
+    name: FreeCAD
+    priority: 1
+    program_tags: [gsoc]
+  - owner: godotengine
+    name: godot
+    priority: 1
+    program_tags: [gsoc]
+  - owner: musescore
+    name: MuseScore
+    priority: 1
+    program_tags: [gsoc]
+  - owner: audacity
+    name: audacity
+    priority: 1
+    program_tags: [gsoc]
+  - owner: wireshark
+    name: wireshark
+    priority: 1
+    program_tags: [gsoc]
+  - owner: envoyproxy
+    name: envoy
+    priority: 1
+    program_tags: [gsoc]
+  - owner: git
+    name: git
+    priority: 1
+    program_tags: [gsoc]
+
+  # Cloud native, distributed systems, and Apache
+  - owner: apache
+    name: datafusion
+    priority: 1
+    program_tags: [gsoc]
+  - owner: apache
+    name: arrow
+    priority: 1
+    program_tags: [gsoc]
+  - owner: apache
+    name: airflow
+    priority: 1
+    program_tags: [gsoc]
+  - owner: apache
+    name: superset
+    priority: 1
+    program_tags: [gsoc]
+  - owner: prometheus
+    name: prometheus
+    priority: 1
+    program_tags: [gsoc]
+  - owner: open-telemetry
+    name: opentelemetry-python
+    priority: 1
+    program_tags: [gsoc]
+  - owner: meshery
+    name: meshery
+    priority: 1
+    program_tags: [gsoc]
+  - owner: asyncapi
+    name: cli
+    priority: 1
+    program_tags: [gsoc]
+  - owner: casbin
+    name: casbin
+    priority: 1
+    program_tags: [gsoc]
+  - owner: etcd-io
+    name: etcd
+    priority: 1
+    program_tags: [gsoc]
+
+  # JavaScript, TypeScript, and scientific JavaScript
+  - owner: stdlib-js
+    name: stdlib
+    priority: 1
+    program_tags: [gsoc]
+  - owner: processing
+    name: p5.js
+    priority: 1
+    program_tags: [gsoc]
+  - owner: webpack
+    name: webpack
+    priority: 1
+    program_tags: [gsoc]
+  - owner: storybookjs
+    name: storybook
+    priority: 1
+    program_tags: [gsoc]
+  - owner: vega
+    name: vega-lite
+    priority: 1
+    program_tags: [gsoc]
+
+  # Priority 10: general high-signal ecosystem repositories.
+  - owner: fastapi
+    name: fastapi
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: pydantic
+    name: pydantic
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: langchain-ai
+    name: langgraph
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: astral-sh
+    name: ruff
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: pgvector
+    name: pgvector
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: duckdb
+    name: duckdb
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: tokio-rs
+    name: tokio
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: serde-rs
+    name: serde
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: nlohmann
+    name: json
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: fmtlib
+    name: fmt
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: encode
+    name: httpx
+    priority: 10
+    program_tags: [ecosystem]
+  - owner: pytest-dev
+    name: pytest
+    priority: 10
+    program_tags: [ecosystem]
+
+organizations:
+  - org: sugarlabs
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: layer5io
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: asyncapi
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: casbin
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: rizinorg
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: MDAnalysis
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: deepchem
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: CircuitVerse
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: PalisadoesFoundation
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: fossasia
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: Submitty
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: CCExtractor
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: wagtail
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: oppia
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: stdlib-js
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: open-telemetry
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: cern-hsf
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: numfocus
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: scikit-image
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
+  - org: astropy
+    max_repos: 2
+    priority: 2
+    program_tags: [gsoc]
