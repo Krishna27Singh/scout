@@ -1,0 +1,17 @@
+{
+  "release-type": "python",
+  "changelog-path": "CHANGELOG.md",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "extra-files": [
+    {
+      "type": "generic",
+      "path": "backend/app/_version.py"
+    }
+  ],
+  "packages": {
+    ".": {
+      "package-name": "scout"
+    }
+  }
+}

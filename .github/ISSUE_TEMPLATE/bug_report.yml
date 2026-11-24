@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible problem in Scout.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: "Please search existing issues first. Never include credentials, tokens, or private user data."
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, deployment/runtime, and Scout version or commit.
+      placeholder: "macOS 15, Python 3.11, local Docker Compose, 0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest sequence that reproduces the problem.
+      placeholder: "1. Start Scout...\n2. Open...\n3. Send..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Redact secrets, tokens, connection strings, and personal data before posting.
+      render: text
+    validations:
+      required: false

@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 
+from app._version import __version__
 from app.db.session import check_db_readiness
 from app.schemas.health import HealthResponse, ReadinessResponse
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok", service="scout", version="0.1.0")
+    return HealthResponse(status="ok", service="scout", version=__version__)
 
 
 @router.get("/ready", response_model=ReadinessResponse)

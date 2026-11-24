@@ -17,6 +17,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
+from app._version import __version__
 from app.agent.llm import FallbackLLMRouter
 from app.api.routes.chat import router as chat_router
 from app.api.routes.health import router as health_router
@@ -65,7 +66,7 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
-    application = FastAPI(title="Scout", version="0.1.0", lifespan=lifespan)
+    application = FastAPI(title="Scout", version=__version__, lifespan=lifespan)
     application.state.embedder = FastEmbedder()
     application.state.llm_router = FallbackLLMRouter(settings)
     application.state.checkpointer = MemorySaver()
