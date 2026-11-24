@@ -70,7 +70,7 @@ def build_agent_graph(
                 }
             )
         return {
-            "plan": plan,
+            "plan": plan.model_dump(mode="json"),
             "provider_used": provider,
             "tool_trace": [*state.get("tool_trace", []), "plan_and_extract"],
         }
@@ -108,7 +108,7 @@ def build_agent_graph(
                 )
                 dismissed_ids.add(issue_id)
         return {
-            "plan": plan,
+            "plan": plan.model_dump(mode="json"),
             "profile": UserPreferencesSchema.model_validate(profile).model_dump(mode="json"),
             "dismissed_issue_ids": sorted(dismissed_ids),
             "tool_trace": [*state.get("tool_trace", []), "apply_memory_updates"],
@@ -136,7 +136,11 @@ def build_agent_graph(
             limit=state["limit"],
             filters=_search_filters(plan, state["prioritize_gsoc"]),
         )
-        response = await retrieval_service.search(session, search_request)
+        response = await retrieval_service.search(
+            session,
+            search_request,
+            replace_saved_languages=bool(plan.override_languages),
+        )
         return {
             "search_response": response.model_dump(mode="json"),
             "tool_trace": [*state.get("tool_trace", []), "hybrid_search"],
@@ -160,9 +164,11 @@ def build_agent_graph(
         candidates = search_response.results if search_response is not None else []
         synthesis_payload = json.dumps(
             {
-                "query": state["user_message"],
+                "user_message": state["user_message"],
                 "intent": plan.intent,
                 "clarifying_question": plan.clarifying_question,
+                "applied_filters": applied_filters.model_dump(mode="json"),
+                "match_count": len(candidates),
                 "fallback_message": _assistant_message(
                     plan,
                     [
@@ -206,6 +212,8 @@ def build_agent_graph(
             plan,
             matches,
         )
+        if matches and _contains_empty_result_claim(assistant_message):
+            assistant_message = f"Found {len(matches)} matching open issues."
         trace = [*state.get("tool_trace", []), "synthesize"]
         planning_provider = state.get("provider_used", "deterministic")
         providers = (
@@ -310,7 +318,7 @@ def _search_filters(
         program_tags=plan.program_tags,
         excluded_labels=profile.excluded_labels if profile is not None else [],
         excluded_topics=profile.excluded_topics if profile is not None else [],
-        languages=profile.preferred_languages if profile is not None else [],
+        languages=plan.override_languages,
         experience_level=profile.experience_level if profile is not None else "intermediate",
         prioritize_gsoc=prioritize_gsoc,
     )
@@ -378,6 +386,18 @@ def _safe_synthesis_message(
     return message
 
 
+def _contains_empty_result_claim(message: str) -> bool:
+    return (
+        re.search(
+            r"\b(?:couldn['’]t find|could not find|no matching|no issues|no matches|"
+            r"no results|zero issues|zero matches)\b",
+            message,
+            re.IGNORECASE,
+        )
+        is not None
+    )
+
+
 def _safe_match_reason(
     issue: RetrievedIssue,
     proposed_reason: str | None,
@@ -409,11 +429,18 @@ _PLANNER_SYSTEM_PROMPT = (
     "You are Scout's intent and preference extractor. Classify the user message, "
     "extract only explicit preferences and target scopes, and never invent an issue ID. "
     "Use search intent when the user asks to find issues, even when they also state "
-    "preferences. Preserve hard negative constraints such as excluded labels."
+    "preferences. Preserve hard negative constraints such as excluded labels. When a "
+    "search explicitly names programming languages, put only those languages in "
+    "override_languages and add them to preference_delta.add_languages; this per-search "
+    "override takes precedence over saved preferred languages. Leave override_languages "
+    "empty when no language is explicitly requested."
 )
 _SYNTHESIS_SYSTEM_PROMPT = (
     "You are Scout's response synthesizer. Use only the supplied issue candidates and "
-    "saved preferences. Return concise plain-English text and one rationale for each "
-    "candidate. Every rationale must be supported by that issue's actual labels, language, "
-    "program tags, maintainer score, and saved preferences. Do not invent issue IDs or URLs."
+    "saved preferences. Treat user_message and applied_filters as the current turn's context; "
+    "do not carry over languages or constraints from earlier turns. Use match_count as the exact "
+    "number of grounded matches and never claim that there are no matches when it is positive. "
+    "Return concise plain-English text and one rationale for each candidate. Every rationale "
+    "must be supported by that issue's actual labels, language, program tags, maintainer score, "
+    "and saved preferences. Do not invent issue IDs or URLs."
 )

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from app.schemas.chat import AgentPlan
-
 
 class AgentState(TypedDict, total=False):
     session_key: str
@@ -13,7 +11,7 @@ class AgentState(TypedDict, total=False):
     conversation_summary: str
     profile: dict[str, object]
     dismissed_issue_ids: list[int]
-    plan: AgentPlan
+    plan: dict[str, object]
     hydration: dict[str, object]
     search_response: dict[str, object]
     final_response: dict[str, object]

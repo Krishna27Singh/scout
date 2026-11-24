@@ -1,6 +1,8 @@
 import json
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 from app.agent import graph as graph_module
 from app.agent.graph import _next_node, _safe_match_reason, enforce_grounded_matches
@@ -8,6 +10,7 @@ from app.agent.llm import DeterministicRuleBasedLLM
 from app.agent.memory import _merge_values
 from app.agent.service import ScoutAgentService
 from app.core.config import Settings
+from app.db.models import UserProfile
 from app.ingestion.embedder import DeterministicFakeEmbedder
 from app.retrieval.service import HybridRetrievalService
 from app.schemas.chat import (
@@ -92,6 +95,39 @@ async def test_deterministic_planner_extracts_preference_removals() -> None:
     assert plan.preference_delta.remove_languages == ["python"]
 
 
+async def test_deterministic_planner_normalizes_language_aliases_and_negation() -> None:
+    llm = DeterministicRuleBasedLLM()
+    plan, _ = await llm.complete_structured(
+        "system",
+        "Looking for issues related to cpp, not beginner level issues",
+        AgentPlan,
+    )
+    aliases, _ = await llm.complete_structured(
+        "system",
+        "Find issues related to cpp, py, ts, js, and golang",
+        AgentPlan,
+    )
+
+    assert plan.preference_delta.add_languages == ["c++"]
+    assert plan.preference_delta.experience_level is None
+    assert aliases.preference_delta.add_languages == [
+        "c++",
+        "go",
+        "javascript",
+        "python",
+        "typescript",
+    ]
+
+
+def test_agent_plan_normalizes_override_languages() -> None:
+    plan = AgentPlan(
+        intent="search",
+        override_languages=[" JavaScript ", "JAVASCRIPT", "Python"],
+    )
+
+    assert plan.override_languages == ["javascript", "python"]
+
+
 async def test_deterministic_synthesis_generates_grounded_rationales() -> None:
     issue = _retrieved_issue()
     payload = json.dumps(
@@ -157,15 +193,17 @@ async def test_compiled_graph_updates_memory_and_records_history(monkeypatch) ->
     assert history.turns[0].user_message == "Remember that I prefer beginner"
 
 
-async def test_compiled_graph_search_synthesizes_only_serialized_candidates(monkeypatch) -> None:
+async def test_compiled_graph_guards_contradictory_synthesis_and_passes_turn_context(
+    monkeypatch,
+) -> None:
     profile = UserPreferencesSchema()
 
     async def load_context(session, session_key):
         del session, session_key
         return profile, set()
 
-    async def fake_search(session, request):
-        del session
+    async def fake_search(session, request, *, replace_saved_languages=False):
+        del session, replace_saved_languages
         return SearchResponse(
             query=request.query,
             mode="hybrid_rerank",
@@ -174,6 +212,25 @@ async def test_compiled_graph_search_synthesizes_only_serialized_candidates(monk
             latency_ms=1.0,
             results=[_retrieved_issue()],
         )
+
+    planner = DeterministicRuleBasedLLM()
+
+    class ContradictorySynthesizer:
+        async def complete_structured(self, system_prompt, user_prompt, response_model):
+            if response_model is AgentPlan:
+                return await planner.complete_structured(
+                    system_prompt,
+                    user_prompt,
+                    response_model,
+                )
+            payload = json.loads(user_prompt)
+            assert payload["user_message"] == "Find parser issues"
+            assert payload["applied_filters"]["languages"] == []
+            assert payload["match_count"] == 1
+            return AgentSynthesis(
+                assistant_message="I couldn't find any matching issues.",
+                rationales=[],
+            ), "test"
 
     monkeypatch.setattr(graph_module, "load_user_context", load_context)
     retrieval = HybridRetrievalService(DeterministicFakeEmbedder())
@@ -185,7 +242,7 @@ async def test_compiled_graph_search_synthesizes_only_serialized_candidates(monk
     service = ScoutAgentService(
         AsyncMock(),
         retrieval,
-        DeterministicRuleBasedLLM(),
+        ContradictorySynthesizer(),
         unused_pipeline_factory,
         settings=Settings(_env_file=None),
     )
@@ -194,11 +251,62 @@ async def test_compiled_graph_search_synthesizes_only_serialized_candidates(monk
     )
 
     assert response.intent == "search"
+    assert response.assistant_message == "Found 1 matching open issues."
     assert len(response.matches) == 1
     assert response.matches[0].issue.id == 1
     assert response.matches[0].issue.html_url.endswith("/issues/1")
     assert "hybrid_search" in response.tool_trace
     assert "good first issue" in response.matches[0].match_reason
+
+
+async def test_explicit_search_language_overrides_saved_profile_language(monkeypatch) -> None:
+    profile = UserProfile(
+        id=uuid4(),
+        session_key="sticky-language",
+        preferred_languages=["c++"],
+        preferred_topics=[],
+        preferred_orgs=[],
+        excluded_labels=[],
+        excluded_topics=[],
+        experience_level="intermediate",
+        raw_notes="",
+    )
+
+    async def load_context(session, session_key):
+        del session, session_key
+        return profile, set()
+
+    async def apply_delta(session, session_key, delta):
+        del session, session_key
+        profile.preferred_languages = sorted(
+            set(profile.preferred_languages) | set(delta.add_languages)
+        )
+        return profile
+
+    monkeypatch.setattr(graph_module, "load_user_context", load_context)
+    monkeypatch.setattr(graph_module, "apply_preference_delta", apply_delta)
+
+    db_session = AsyncMock()
+    db_session.scalar.return_value = profile
+    db_session.scalars.return_value = SimpleNamespace(all=lambda: [])
+    db_session.execute.return_value = SimpleNamespace(all=lambda: [])
+    service = ScoutAgentService(
+        db_session,
+        HybridRetrievalService(DeterministicFakeEmbedder()),
+        DeterministicRuleBasedLLM(),
+        lambda: None,
+        settings=Settings(_env_file=None),
+    )
+
+    response = await service.chat(
+        ChatRequest(
+            session_key="sticky-language",
+            message="Javascript related issues",
+        )
+    )
+
+    assert response.preferences.preferred_languages == ["c++", "javascript"]
+    assert response.applied_filters.languages == ["javascript"]
 
 
 def test_langgraph_node_routing_covers_intents_and_target_hydration() -> None:

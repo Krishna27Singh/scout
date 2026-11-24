@@ -21,6 +21,8 @@ class HybridRetrievalService:
         self,
         session: AsyncSession,
         request: SearchRequest,
+        *,
+        replace_saved_languages: bool = False,
     ) -> SearchResponse:
         start_time = time.perf_counter()
         profile: UserProfile | None = None
@@ -39,7 +41,11 @@ class HybridRetrievalService:
                         )
                     ).all()
                 )
-        filters = merge_filters(profile, request.filters)
+        filters = merge_filters(
+            profile,
+            request.filters,
+            replace_saved_languages=replace_saved_languages,
+        )
         conditions = build_base_conditions(filters, dismissed_issue_ids)
         candidate_limit = max(request.limit * CANDIDATE_MULTIPLIER, MIN_CANDIDATES)
         candidates: dict[int, RetrievalCandidate] = {}

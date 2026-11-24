@@ -17,7 +17,7 @@ from app.schemas.search import RetrievedIssue
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {400, 404, 429, 500, 502, 503, 504}
 _PROVIDERS = {
     "groq": ("https://api.groq.com/openai/v1/chat/completions", "groq_api_key", "groq_model"),
     "gemini": (
@@ -27,14 +27,14 @@ _PROVIDERS = {
     ),
 }
 _LANGUAGES = {
-    "c++": ("c++",),
+    "c++": ("c++", "cpp"),
     "c#": ("c#",),
     "javascript": ("javascript", "js"),
     "typescript": ("typescript", "ts"),
-    "python": ("python",),
+    "python": ("python", "py"),
     "rust": ("rust",),
     "java": ("java",),
-    "go": ("golang",),
+    "go": ("go", "golang"),
     "ruby": ("ruby",),
     "php": ("php",),
 }
@@ -43,7 +43,21 @@ _EXCLUDED_LABEL_ALIASES = {
     "css": ("css", "styling"),
     "frontend": ("frontend", "front-end"),
 }
-_ORG_WORDS = {"python", "rust", "java", "golang", "javascript", "typescript", "gsoc"}
+_ORG_WORDS = {
+    "python",
+    "py",
+    "rust",
+    "java",
+    "go",
+    "golang",
+    "javascript",
+    "js",
+    "typescript",
+    "ts",
+    "c++",
+    "cpp",
+    "gsoc",
+}
 
 
 class StructuredLLMClient(Protocol):
@@ -118,6 +132,7 @@ class OpenAICompatLLMClient:
                     "messages": messages,
                     "response_format": {"type": "json_object"},
                     "temperature": 0,
+                    "max_tokens": 2048,
                 },
             )
             response.raise_for_status()
@@ -294,10 +309,7 @@ def build_agent_plan(message: str) -> dict[str, object]:
     languages = sorted(detected_languages - remove_languages)
     excluded_labels = _find_excluded_labels(normalized)
     excluded_topics = _find_excluded_topics(normalized)
-    experience: ExperienceLevel | None = next(
-        (level for level in ("beginner", "intermediate", "advanced") if level in normalized),
-        None,
-    )
+    experience = _extract_experience_level(normalized)
     delta = PreferenceDelta(
         add_languages=languages,
         remove_languages=sorted(remove_languages),
@@ -367,8 +379,23 @@ def build_agent_plan(message: str) -> dict[str, object]:
         "target_org": target_org,
         "target_repo": target_repo,
         "program_tags": ["gsoc"] if "gsoc" in normalized else [],
+        "override_languages": languages,
     }
     return plan
+
+
+def _extract_experience_level(message: str) -> ExperienceLevel | None:
+    levels: tuple[ExperienceLevel, ...] = ("beginner", "intermediate", "advanced")
+    for level in levels:
+        if not re.search(rf"\b{level}\b", message):
+            continue
+        negated = re.search(
+            rf"\b(?:not|no)\s+(?:a\s+)?{level}\b|\bnon[-\s]{level}\b",
+            message,
+        )
+        if negated is None:
+            return level
+    return None
 
 
 def _build_deterministic_synthesis(user_prompt: str) -> AgentSynthesis:
