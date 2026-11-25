@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from app._version import __version__
 from app.api.routes import health as health_routes
 
 
@@ -12,7 +11,7 @@ async def test_health_returns_liveness_payload(client: AsyncClient) -> None:
     assert response.json() == {
         "status": "ok",
         "service": "scout",
-        "version": __version__,
+        "version": health_routes.__version__,
     }
     assert response.headers["x-request-id"]
 
