@@ -72,6 +72,55 @@ def test_preference_delta_merge_is_idempotent_and_removes_languages_only() -> No
     ]
 
 
+def test_agent_plan_normalizes_repository_name_with_organization() -> None:
+    plan = AgentPlan(
+        intent="search",
+        target_org=" /encode/ ",
+        target_repo=" /httpx/ ",
+    )
+
+    assert plan.target_org == "encode"
+    assert plan.target_repo == "encode/httpx"
+
+
+async def test_hydration_normalizes_repository_name_with_organization(monkeypatch) -> None:
+    observed: dict[str, str | None] = {}
+
+    async def no_fresh_repositories(session, target_org, target_repo, stale_before):
+        del session, stale_before
+        observed["target_org"] = target_org
+        observed["target_repo"] = target_repo
+        return []
+
+    monkeypatch.setattr(hydration_module, "_fresh_repositories", no_fresh_repositories)
+
+    report = await hydration_module.maybe_hydrate_target_scope(
+        AsyncMock(),
+        target_org="encode",
+        target_repo="httpx",
+        pipeline_factory=lambda: None,
+        settings=Settings(_env_file=None),
+    )
+
+    assert observed == {"target_org": "encode", "target_repo": "encode/httpx"}
+    assert report.scope == "encode/httpx"
+    assert report.status == "skipped_no_token"
+
+
+async def test_malformed_hydration_repository_without_org_is_not_needed() -> None:
+    report = await hydration_module.maybe_hydrate_target_scope(
+        AsyncMock(),
+        target_org=None,
+        target_repo="httpx",
+        pipeline_factory=lambda: None,
+        settings=Settings(_env_file=None, github_token="test-token"),
+    )
+
+    assert report.triggered is False
+    assert report.scope is None
+    assert report.status == "not_needed"
+
+
 async def test_target_hydration_timeout_returns_failed_report(monkeypatch) -> None:
     async def no_fresh_repositories(*args, **kwargs):
         del args, kwargs

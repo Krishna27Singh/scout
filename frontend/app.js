@@ -25,6 +25,7 @@ const LANGUAGE_COLORS = {
   go: "#00ADD8",
 };
 const CHAT_REQUEST_TIMEOUT_MS = 90_000;
+const GATEWAY_FAILURE_STATUSES = new Set([502, 503, 504]);
 
 const elements = {
   chatLog: document.getElementById("chat-log"),
@@ -46,6 +47,8 @@ const elements = {
 let sessionKey = readStorage("scout.sessionKey") || createSessionKey();
 let preferences = structuredClone(EMPTY_PROFILE);
 let saveTimer;
+let backendAwake = false;
+let healthRetryTimer;
 
 function readStorage(key) {
   try {
@@ -86,17 +89,21 @@ function clearError() {
 }
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
-  if (response.ok) {
-    updateHealth(true);
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: {
+        Accept: "application/json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...options.headers,
+      },
+    });
+  } catch (error) {
+    markBackendWaking();
+    throw error;
   }
+  observeBackendResponse(response);
   if (!response.ok) {
     const body = await response.text();
     const error = new Error(body || `Request failed (${response.status})`);
@@ -114,32 +121,64 @@ function updateHealth(healthy, waking = false) {
   elements.healthDot.classList.toggle("is-offline", !healthy && !waking);
   elements.healthDot.classList.toggle("is-waking", waking);
   elements.healthLabel.textContent = healthy ? "Online" : waking ? "Waking up" : "Unavailable";
-  elements.wakeBanner.hidden = healthy;
-}
-
-async function pollHealth() {
-  try {
-    const response = await fetch("/health", { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`Health check returned ${response.status}`);
-    }
-    updateHealth(true);
-    return true;
-  } catch {
-    updateHealth(false, true);
-    return false;
+  if (healthy) {
+    elements.wakeBanner.hidden = true;
+    elements.wakeBanner.classList.remove("visible", "is-visible");
+    elements.wakeBanner.style.display = "none";
+  } else if (waking) {
+    elements.wakeBanner.hidden = false;
+    elements.wakeBanner.classList.add("is-visible");
+    elements.wakeBanner.style.display = "";
   }
 }
 
-async function monitorHealth() {
-  if (await pollHealth()) {
+function markBackendAwake() {
+  backendAwake = true;
+  updateHealth(true);
+  if (healthRetryTimer !== undefined) {
+    window.clearTimeout(healthRetryTimer);
+    healthRetryTimer = undefined;
+  }
+}
+
+function markBackendWaking() {
+  if (!backendAwake) {
+    updateHealth(false, true);
+  }
+}
+
+function observeBackendResponse(response) {
+  if (backendAwake) {
     return;
   }
-  const interval = window.setInterval(async () => {
-    if (await pollHealth()) {
-      window.clearInterval(interval);
-    }
+  if (GATEWAY_FAILURE_STATUSES.has(response.status)) {
+    markBackendWaking();
+    return;
+  }
+  markBackendAwake();
+}
+
+function scheduleHealthRetry() {
+  if (backendAwake || healthRetryTimer !== undefined) {
+    return;
+  }
+  healthRetryTimer = window.setTimeout(() => {
+    healthRetryTimer = undefined;
+    void checkHealth();
   }, 3000);
+}
+
+async function checkHealth() {
+  if (backendAwake) {
+    return;
+  }
+  try {
+    const response = await fetch("/health", { cache: "no-store" });
+    observeBackendResponse(response);
+  } catch {
+    markBackendWaking();
+  }
+  scheduleHealthRetry();
 }
 
 function renderTagEditor(field, containerId) {
@@ -703,7 +742,7 @@ elements.sidebarToggle.addEventListener("click", () => {
 
 async function initialize() {
   setSessionKey(sessionKey);
-  await monitorHealth();
+  await checkHealth();
   await Promise.all([loadPreferences(), loadHistory()]);
 }
 

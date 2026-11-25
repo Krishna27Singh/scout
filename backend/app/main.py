@@ -94,6 +94,8 @@ def create_app() -> FastAPI:
         try:
             response = await call_next(request)
             response.headers["X-Request-ID"] = request_id
+            if request.url.path in {"/static/styles.css", "/static/app.js"}:
+                response.headers["Cache-Control"] = "no-cache"
             return response
         finally:
             request_id_context.reset(token)
