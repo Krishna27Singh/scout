@@ -2,6 +2,8 @@
 
 Scout finds open-source GitHub issues that match a contributor's skills, interests, and constraints.
 
+**Live App:** [scout-api-qup9.onrender.com](https://scout-api-qup9.onrender.com) — the Render free tier may take about 30 seconds to wake on your first visit.
+
 [![CI](https://github.com/Krishna27Singh/scout/actions/workflows/ci.yml/badge.svg)](https://github.com/Krishna27Singh/scout/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
