@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
     llm_timeout_seconds: float = 20.0
-    jit_hydration_max_issues: int = 60
-    jit_hydration_max_org_repos: int = 3
+    jit_hydration_max_issues: int = 20
+    jit_hydration_max_org_repos: int = 2
     jit_hydration_stale_hours: int = 24
     cors_origins: list[str] = [
         "http://localhost:3000",
