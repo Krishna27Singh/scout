@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from collections.abc import Sequence
 from typing import Any
@@ -33,6 +34,8 @@ from app.schemas.chat import (
 )
 from app.schemas.preferences import UserPreferencesSchema
 from app.schemas.search import RetrievedIssue, SearchFilters, SearchRequest, SearchResponse
+
+logger = logging.getLogger(__name__)
 
 
 def build_agent_graph(
@@ -116,13 +119,18 @@ def build_agent_graph(
 
     async def hydrate_target_scope_node(state: AgentState) -> dict[str, object]:
         plan = _plan_from_state(state)
-        report = await maybe_hydrate_target_scope(
-            session,
-            plan.target_org,
-            plan.target_repo,
-            pipeline_factory,
-            settings,
-        )
+        scope = plan.target_repo or plan.target_org
+        try:
+            report = await maybe_hydrate_target_scope(
+                session,
+                plan.target_org,
+                plan.target_repo,
+                pipeline_factory,
+                settings,
+            )
+        except Exception:
+            logger.exception("Agent target hydration failed", extra={"scope": scope})
+            report = HydrationReport(triggered=True, scope=scope, status="failed")
         return {
             "hydration": report.model_dump(mode="json"),
             "tool_trace": [*state.get("tool_trace", []), "hydrate_target_scope"],

@@ -1,9 +1,12 @@
+import logging
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.preferences import ExperienceLevel, UserPreferencesSchema
 from app.schemas.search import RetrievedIssue, SearchFilters
+
+logger = logging.getLogger(__name__)
 
 _DELTA_LIST_FIELDS = (
     "add_languages",
@@ -13,6 +16,40 @@ _DELTA_LIST_FIELDS = (
     "add_excluded_labels",
     "add_excluded_topics",
 )
+
+
+def normalize_target_scope(
+    target_org: str | None,
+    target_repo: str | None,
+) -> tuple[str | None, str | None]:
+    normalized_org = target_org.strip().strip("/").strip() if target_org is not None else None
+    if not normalized_org:
+        normalized_org = None
+    elif "/" in normalized_org:
+        logger.warning(
+            "Ignoring invalid organization target",
+            extra={"target_org": target_org},
+        )
+        normalized_org = None
+
+    normalized_repo = None
+    if target_repo is not None:
+        candidate = target_repo.strip().strip("/")
+        if candidate and "/" not in candidate and normalized_org:
+            candidate = f"{normalized_org}/{candidate}"
+        parts = candidate.split("/") if candidate else []
+        if len(parts) == 2:
+            owner, name = (part.strip().strip("/") for part in parts)
+        else:
+            owner, name = "", ""
+        if owner and name and "/" not in owner and "/" not in name:
+            normalized_repo = f"{owner}/{name}"
+        else:
+            logger.warning(
+                "Ignoring invalid repository target",
+                extra={"target_org": normalized_org, "target_repo": target_repo},
+            )
+    return normalized_org, normalized_repo
 
 
 class PreferenceDelta(BaseModel):
@@ -75,6 +112,24 @@ class AgentPlan(BaseModel):
         if any(not isinstance(item, str) for item in value):
             return value
         return sorted({item.strip().casefold() for item in value if item.strip()})
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_target_scope_fields(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        data = value.copy()
+        target_org = data.get("target_org")
+        target_repo = data.get("target_repo")
+        if (target_org is not None and not isinstance(target_org, str)) or (
+            target_repo is not None and not isinstance(target_repo, str)
+        ):
+            return value
+        data["target_org"], data["target_repo"] = normalize_target_scope(
+            target_org,
+            target_repo,
+        )
+        return data
 
 
 class GroundedMatch(BaseModel):

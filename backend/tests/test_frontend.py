@@ -13,5 +13,7 @@ async def test_frontend_shell_and_static_assets_are_served(client: AsyncClient) 
     assert 'id="chat-log"' in page.text
     assert styles.status_code == 200
     assert "text/css" in styles.headers["content-type"]
+    assert styles.headers["cache-control"] == "no-cache"
     assert script.status_code == 200
     assert "javascript" in script.headers["content-type"]
+    assert script.headers["cache-control"] == "no-cache"
