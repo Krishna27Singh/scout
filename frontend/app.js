@@ -24,6 +24,7 @@ const LANGUAGE_COLORS = {
   rust: "#dea584",
   go: "#00ADD8",
 };
+const CHAT_REQUEST_TIMEOUT_MS = 90_000;
 
 const elements = {
   chatLog: document.getElementById("chat-log"),
@@ -93,6 +94,9 @@ async function requestJson(path, options = {}) {
       ...options.headers,
     },
   });
+  if (response.ok) {
+    updateHealth(true);
+  }
   if (!response.ok) {
     const body = await response.text();
     const error = new Error(body || `Request failed (${response.status})`);
@@ -299,7 +303,7 @@ function createTurn(userMessage) {
 }
 
 function appendResponse(turn, response) {
-  turn.querySelector(".loading-skeleton")?.remove();
+  turn.querySelector(".chat-inline-loading")?.remove();
   turn.append(createResponseBox(response));
   elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
 }
@@ -528,33 +532,54 @@ function formatScore(value) {
   return Number.isFinite(score) ? score.toFixed(2) : "—";
 }
 
-function appendLoadingSkeleton(turn) {
-  const skeleton = document.createElement("div");
-  skeleton.className = "loading-skeleton";
-  skeleton.setAttribute("aria-label", "Scout is searching");
-  const avatar = document.createElement("span");
-  avatar.className = "skeleton-avatar";
-  const lines = document.createElement("span");
-  lines.className = "skeleton-lines";
-  lines.append(document.createElement("span"), document.createElement("span"));
-  skeleton.append(avatar, lines);
-  turn.append(skeleton);
-  elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
-  return skeleton;
+function createLoadingRow() {
+  const row = document.createElement("div");
+  row.className = "chat-inline-loading";
+  row.setAttribute("role", "status");
+  const spinner = document.createElement("span");
+  spinner.className = "loading-spinner";
+  spinner.setAttribute("aria-hidden", "true");
+  const message = document.createElement("span");
+  message.textContent = "Searching issues (and syncing repository if needed)…";
+  row.append(spinner, message);
+  return row;
 }
 
-async function sendMessage(text) {
-  const message = text.trim();
-  if (message.length < 2) {
-    return;
+function createInlineChatError(message, onRetry) {
+  const row = document.createElement("div");
+  row.className = "chat-inline-error";
+  row.setAttribute("role", "alert");
+  row.setAttribute("aria-live", "assertive");
+  const errorMessage = document.createElement("p");
+  errorMessage.textContent = `Search failed: ${message}`;
+  const retry = document.createElement("button");
+  retry.className = "button button-secondary";
+  retry.type = "button";
+  retry.textContent = "Retry";
+  retry.addEventListener("click", onRetry);
+  row.append(errorMessage, retry);
+  return row;
+}
+
+async function submitChatMessage(message, turn, previousStatus = null) {
+  const loading = createLoadingRow();
+  if (previousStatus) {
+    previousStatus.replaceWith(loading);
+  } else {
+    turn.append(loading);
   }
-  clearError();
-  const turn = createTurn(message);
-  appendLoadingSkeleton(turn);
+  loading.scrollIntoView({ block: "nearest" });
+  elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
   elements.sendButton.disabled = true;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    CHAT_REQUEST_TIMEOUT_MS,
+  );
   try {
     const response = await requestJson("/api/v1/chat", {
       method: "POST",
+      signal: controller.signal,
       body: JSON.stringify({
         session_key: sessionKey,
         message,
@@ -566,12 +591,32 @@ async function sendMessage(text) {
     preferences = response.preferences || preferences;
     renderPreferences();
   } catch (error) {
-    turn.querySelector(".loading-skeleton")?.remove();
-    showError(`Scout could not complete that search: ${error.message}`);
+    let errorMessage;
+    if (controller.signal.aborted) {
+      errorMessage = "Search timed out after 90 seconds.";
+    } else {
+      errorMessage = error instanceof Error ? error.message : String(error);
+    }
+    const errorRow = createInlineChatError(errorMessage, () => {
+      void submitChatMessage(message, turn, errorRow);
+    });
+    loading.replaceWith(errorRow);
+    errorRow.scrollIntoView({ block: "nearest" });
   } finally {
+    window.clearTimeout(timeout);
     elements.sendButton.disabled = false;
     elements.messageInput.focus();
   }
+}
+
+async function sendMessage(text) {
+  const message = text.trim();
+  if (message.length < 2) {
+    return;
+  }
+  clearError();
+  const turn = createTurn(message);
+  await submitChatMessage(message, turn);
 }
 
 async function loadHistory() {

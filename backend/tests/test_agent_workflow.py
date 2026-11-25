@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -5,6 +6,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from app.agent import graph as graph_module
+from app.agent import hydration as hydration_module
 from app.agent.graph import _next_node, _safe_match_reason, enforce_grounded_matches
 from app.agent.llm import DeterministicRuleBasedLLM
 from app.agent.memory import _merge_values
@@ -68,6 +70,44 @@ def test_preference_delta_merge_is_idempotent_and_removes_languages_only() -> No
         "documentation",
         "docs",
     ]
+
+
+async def test_target_hydration_timeout_returns_failed_report(monkeypatch) -> None:
+    async def no_fresh_repositories(*args, **kwargs):
+        del args, kwargs
+        return []
+
+    async def slow_sync_repository(*args, **kwargs):
+        del args, kwargs
+        await asyncio.sleep(10)
+
+    client = SimpleNamespace(aclose=AsyncMock())
+    pipeline = SimpleNamespace(
+        github_client=client,
+        sync_repository=slow_sync_repository,
+    )
+    real_wait_for = asyncio.wait_for
+
+    async def quick_wait_for(awaitable, timeout):
+        assert timeout == 25.0
+        return await real_wait_for(awaitable, timeout=0.01)
+
+    monkeypatch.setattr(hydration_module, "_fresh_repositories", no_fresh_repositories)
+    monkeypatch.setattr(hydration_module, "_issue_count", AsyncMock(return_value=0))
+    monkeypatch.setattr(hydration_module.asyncio, "wait_for", quick_wait_for)
+
+    report = await hydration_module.maybe_hydrate_target_scope(
+        AsyncMock(),
+        target_org=None,
+        target_repo="owner/repo",
+        pipeline_factory=lambda: pipeline,
+        settings=Settings(_env_file=None, github_token="test-token"),
+    )
+
+    assert report.triggered is True
+    assert report.scope == "owner/repo"
+    assert report.status == "failed"
+    client.aclose.assert_awaited_once()
 
 
 async def test_deterministic_planner_extracts_negative_constraints_and_target_scope() -> None:

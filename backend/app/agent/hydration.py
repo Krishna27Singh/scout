@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
@@ -47,7 +48,8 @@ async def maybe_hydrate_target_scope(
 
     pipeline = pipeline_factory()
     client = pipeline.github_client
-    try:
+
+    async def hydrate() -> HydrationReport:
         if target_repo is not None:
             owner, separator, name = target_repo.partition("/")
             if not separator or not owner or not name or "/" in name:
@@ -98,6 +100,12 @@ async def maybe_hydrate_target_scope(
             issues_added=issues_added,
             status="hydrated",
         )
+
+    try:
+        return await asyncio.wait_for(hydrate(), timeout=25.0)
+    except TimeoutError:
+        logger.warning("On-demand repository hydration timed out", extra={"scope": scope})
+        return HydrationReport(triggered=True, scope=scope, status="failed")
     except (GitHubGraphQLError, httpx.HTTPError):
         logger.exception("On-demand repository hydration failed", extra={"scope": scope})
         return HydrationReport(triggered=True, scope=scope, status="failed")
