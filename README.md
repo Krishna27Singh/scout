@@ -10,6 +10,9 @@ Scout finds open-source GitHub issues that match a contributor's skills, interes
 ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688.svg)
 ![pgvector](https://img.shields.io/badge/search-pgvector-336791.svg)
 
+<img width="1622" height="1000" alt="image" src="https://github.com/user-attachments/assets/200d9aa4-0c39-4edb-b36f-b0b752c10a4a" />
+
+
 ## Architecture
 
 ```mermaid
