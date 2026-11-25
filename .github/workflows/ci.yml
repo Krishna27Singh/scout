@@ -32,7 +32,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Cache ONNX embedding model
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/fastembed
           key: fastembed-${{ runner.os }}-${{ hashFiles('backend/app/core/config.py') }}
